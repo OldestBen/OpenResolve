@@ -1,0 +1,37 @@
+version: '3.9'
+
+services:
+  backend:
+    build: ./backend
+    container_name: openresolve-backend
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - DB_PATH=/data/openresolve.db
+      - UPLOAD_PATH=/data/uploads
+      - RIGHTS_PATH=/rights-content
+    volumes:
+      - openresolve-data:/data
+      - ./rights-content:/rights-content:ro
+    networks:
+      - internal
+
+  frontend:
+    build: ./frontend
+    container_name: openresolve-frontend
+    restart: unless-stopped
+    ports:
+      - "${HOST_PORT:-3000}:80"
+    depends_on:
+      - backend
+    networks:
+      - internal
+
+networks:
+  internal:
+    driver: bridge
+
+volumes:
+  openresolve-data:
