@@ -4,6 +4,22 @@ const cors = require('cors');
 const helmet = require('helmet');
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
+
+// ── JWT_SECRET guard ──────────────────────────────────────────────────────────
+// A missing or placeholder secret means tokens would be signed with a known
+// value — anyone could forge them. Generate a random one and warn loudly.
+const WEAK_PATTERNS = ['please_run', 'change_me', 'dev_secret', 'changeme'];
+if (!process.env.JWT_SECRET || WEAK_PATTERNS.some(p => process.env.JWT_SECRET.includes(p))) {
+  const generated = crypto.randomBytes(48).toString('hex');
+  process.env.JWT_SECRET = generated;
+  console.warn('');
+  console.warn('  ⚠  WARNING: JWT_SECRET is missing or insecure.');
+  console.warn('     A temporary secret has been generated for this session.');
+  console.warn('     All existing sessions will be invalidated on next restart.');
+  console.warn('     Run ./setup.sh (or set JWT_SECRET in .env) to fix this.');
+  console.warn('');
+}
 
 // Ensure data dirs exist
 const uploadPath = process.env.UPLOAD_PATH || path.join(__dirname, '../uploads');

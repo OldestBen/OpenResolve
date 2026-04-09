@@ -581,7 +581,7 @@ for url in "${ACCESS_URLS[@]}"; do
 done
 echo '  ║                                                              ║'
 printf "  ║  Username: %-50s║\n" "admin"
-printf "  ║  Password: %-50s║\n" "${ADMIN_PASSWORD}"
+echo '  ║  Password: see .env (not shown for security)                 ║'
 echo '  ║                                                              ║'
 echo '  ║  Useful commands:                                            ║'
 printf "  ║    %-58s║\n" "${COMPOSE_CMD} logs -f        (live logs)"

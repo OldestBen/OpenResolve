@@ -93,7 +93,7 @@ function seedAdmin() {
   const password = process.env.ADMIN_PASSWORD || 'changeme';
   const existing = db.prepare('SELECT id FROM users WHERE username = ?').get(username);
   if (!existing) {
-    const hash = bcrypt.hashSync(password, 10);
+    const hash = bcrypt.hashSync(password, 12);
     db.prepare('INSERT INTO users (id, username, password_hash, created_at) VALUES (?, ?, ?, ?)')
       .run(uuidv4(), username, hash, new Date().toISOString());
     console.log(`Admin user '${username}' created.`);

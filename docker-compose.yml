@@ -9,7 +9,7 @@ version: '3.9'
 # ║    docker compose up -d                                       ║
 # ║                                                               ║
 # ║  Then open: http://localhost:3000                             ║
-# ║  Default login: admin / openresolve                           ║
+# ║  Login: admin / (password set in ADMIN_PASSWORD below)        ║
 # ╚═══════════════════════════════════════════════════════════════╝
 
 services:
