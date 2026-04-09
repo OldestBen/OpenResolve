@@ -1,37 +1,95 @@
 version: '3.9'
 
+# ╔═══════════════════════════════════════════════════════════════╗
+# ║              OpenResolve — Docker Compose                     ║
+# ║                                                               ║
+# ║  Quick start:                                                 ║
+# ║    1. Run ./setup.sh   (generates a secret + starts the app)  ║
+# ║    OR                                                         ║
+# ║    docker compose up -d                                       ║
+# ║                                                               ║
+# ║  Then open: http://localhost:3000                             ║
+# ║  Default login: admin / openresolve                           ║
+# ╚═══════════════════════════════════════════════════════════════╝
+
 services:
+
+  # ── Backend API (Node.js + SQLite) ──────────────────────────────
   backend:
     build: ./backend
     container_name: openresolve-backend
     restart: unless-stopped
-    env_file: .env
     environment:
-      - NODE_ENV=production
-      - PORT=3001
-      - DB_PATH=/data/openresolve.db
-      - UPLOAD_PATH=/data/uploads
-      - RIGHTS_PATH=/rights-content
+      NODE_ENV: production
+      PORT: 3001
+      DB_PATH: /data/openresolve.db
+      UPLOAD_PATH: /data/uploads
+      RIGHTS_PATH: /rights-content
+
+      # ── Auth ──────────────────────────────────────────────────
+      # Change this! Generate a strong secret with:
+      #   openssl rand -hex 32
+      # Or run ./setup.sh which does this automatically.
+      JWT_SECRET: ${JWT_SECRET:-please_run_setup_sh_to_generate_a_real_secret}
+
+      # ── Admin account ─────────────────────────────────────────
+      # These are only used on first startup to create the admin user.
+      # Change the password after your first login if you like.
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-openresolve}
+
+      # ── Email ingestion (optional) ────────────────────────────
+      # Set EMAIL_INGESTION_ENABLED=true and EMAIL_DOMAIN to activate
+      # per-case email aliases. See docker-compose.email.yml.
+      EMAIL_INGESTION_ENABLED: ${EMAIL_INGESTION_ENABLED:-false}
+      EMAIL_DOMAIN: ${EMAIL_DOMAIN:-}
+      WEBHOOK_SECRET: ${WEBHOOK_SECRET:-}
+
     volumes:
+      # All data (database + uploaded files) lives here.
+      # Back up this volume to preserve your cases.
       - openresolve-data:/data
+
+      # Rights guidance markdown files — edit these on your host
+      # and changes appear immediately (no restart needed).
       - ./rights-content:/rights-content:ro
+
     networks:
       - internal
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/api/health', r => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
+  # ── Frontend (React + nginx) ─────────────────────────────────────
   frontend:
     build: ./frontend
     container_name: openresolve-frontend
     restart: unless-stopped
     ports:
+      # Change the left number to use a different port on your machine.
+      # e.g. "8080:80" to access at http://localhost:8080
       - "${HOST_PORT:-3000}:80"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     networks:
       - internal
 
+# ── Networking ───────────────────────────────────────────────────────
 networks:
   internal:
     driver: bridge
 
+# ── Volumes ──────────────────────────────────────────────────────────
 volumes:
   openresolve-data:
+    # To back up your data:
+    #   docker run --rm -v openresolve-data:/data -v $(pwd):/backup alpine \
+    #     tar czf /backup/openresolve-backup-$(date +%Y%m%d).tar.gz /data
+    #
+    # To restore:
+    #   docker run --rm -v openresolve-data:/data -v $(pwd):/backup alpine \
+    #     tar xzf /backup/openresolve-backup-YYYYMMDD.tar.gz -C /
