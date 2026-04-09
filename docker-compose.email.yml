@@ -1,0 +1,18 @@
+# Optional email ingestion overlay
+# Usage: docker compose -f docker-compose.yml -f docker-compose.email.yml up
+#
+# This adds inbound email routing via a Cloudflare Email Workers webhook.
+# Each case gets a unique alias: case-<ref>@<EMAIL_DOMAIN>
+# Point Cloudflare Email Routing → Workers → your /api/webhook/email endpoint.
+#
+# Alternatively, configure a catch-all on any SMTP server and forward to
+# the same webhook endpoint.
+
+version: '3.9'
+
+services:
+  backend:
+    environment:
+      - EMAIL_INGESTION_ENABLED=true
+      - EMAIL_DOMAIN=${EMAIL_DOMAIN}
+      - WEBHOOK_SECRET=${WEBHOOK_SECRET}
