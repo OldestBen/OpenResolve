@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ScaleIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
@@ -7,20 +8,23 @@ export default function Login() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const { user, login } = useAuth();
+  const navigate = useNavigate();
+
+  // If the user is already authenticated (e.g. token still valid), redirect immediately.
+  useEffect(() => {
+    if (user) navigate('/', { replace: true });
+  }, [user, navigate]);
 
   async function handleSubmit(e) {
     e.preventDefault();
     setLoading(true);
     try {
       await login(username, password);
-      // Don't call navigate() here. AppRoutes already has:
-      //   user ? <Navigate to="/" replace /> : <Login />
-      // When setUser() fires inside login(), AppRoutes re-renders and
-      // redirects automatically — no race against React's state flush.
+      navigate('/', { replace: true });
     } catch {
       toast.error('Invalid username or password');
-      setLoading(false); // only reset on failure; on success the component unmounts
+      setLoading(false);
     }
   }
 
