@@ -11,7 +11,9 @@ api.interceptors.request.use(config => {
 api.interceptors.response.use(
   r => r,
   err => {
-    if (err.response?.status === 401) {
+    // Don't redirect when the 401 comes from the login endpoint itself —
+    // that just means wrong credentials, and Login.jsx handles the error toast.
+    if (err.response?.status === 401 && !window.location.pathname.startsWith('/login')) {
       localStorage.removeItem('or_token');
       window.location.href = '/login';
     }
