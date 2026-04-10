@@ -91,12 +91,24 @@ function initSchema() {
 function seedAdmin() {
   const username = process.env.ADMIN_USERNAME || 'admin';
   const password = process.env.ADMIN_PASSWORD || 'changeme';
-  const existing = db.prepare('SELECT id FROM users WHERE username = ?').get(username);
+  const existing = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
   if (!existing) {
     const hash = bcrypt.hashSync(password, 12);
     db.prepare('INSERT INTO users (id, username, password_hash, created_at) VALUES (?, ?, ?, ?)')
       .run(uuidv4(), username, hash, new Date().toISOString());
     console.log(`Admin user '${username}' created.`);
+  } else if (process.env.ADMIN_PASSWORD) {
+    // If ADMIN_PASSWORD is explicitly set and doesn't match the stored hash,
+    // update it. This ensures that changing ADMIN_PASSWORD in .env and
+    // restarting always takes effect (e.g. after a botched first-run).
+    // Note: if you change your password via the web UI, also update ADMIN_PASSWORD
+    // in .env — otherwise a container restart will revert it to the .env value.
+    const matches = bcrypt.compareSync(password, existing.password_hash);
+    if (!matches) {
+      const hash = bcrypt.hashSync(password, 12);
+      db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(hash, existing.id);
+      console.log(`Admin user '${username}' password updated from ADMIN_PASSWORD env var.`);
+    }
   }
 }
 
